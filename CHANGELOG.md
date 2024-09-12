@@ -1,3 +1,6 @@
+## 2.1.0-pre
+* (Android) require AGP 7.4.2 and compileSdk 34
+
 ## 2.0.5-pre
 * Increase supported `uuid` version range
 
