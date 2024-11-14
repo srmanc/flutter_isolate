@@ -18,6 +18,7 @@ import io.flutter.FlutterInjector;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.FlutterEngineGroup;
+import io.flutter.embedding.engine.FlutterEngineGroupCache;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
@@ -96,7 +97,12 @@ public class FlutterIsolatePlugin implements FlutterPlugin, MethodCallHandler, S
 
     @Override
     public void onAttachedToEngine(FlutterPluginBinding binding) {
-        engineGroup = new FlutterEngineGroup(binding.getApplicationContext()); 
+        FlutterEngineGroupCache engineGroupCache = FlutterEngineGroupCache.getInstance();
+        FlutterEngineGroup engineGroup = engineGroupCache.get("main");
+        if (engineGroup == null) {
+            engineGroup = new FlutterEngineGroup(binding.getApplicationContext());
+            engineGroupCache.put("main", engineGroup);
+        }
         setupChannel(binding.getBinaryMessenger(), binding.getApplicationContext());
     }
 
