@@ -1,4 +1,5 @@
 #import "FlutterIsolatePlugin.h"
+#import "SwizzledFlutterEngineGroupCache.h"
 #import <objc/message.h>
 
 @interface IsolateHolder : NSObject
@@ -65,18 +66,35 @@ static NSString* _isolatePluginRegistrantClassName;
 
     FlutterCallbackInformation *info = [FlutterCallbackCache lookupCallbackInformation:isolate.entryPoint];
 
-    isolate.engine = [FlutterEngine alloc];
-    if ([isolate.engine respondsToSelector:@selector(initWithName:project:allowHeadlessExecution:)]) {
-        ((id(*)(id,SEL,id,id,id))objc_msgSend)(isolate.engine, @selector(initWithName:project:allowHeadlessExecution:) , isolate.isolateId, nil, @(YES));
+    NSString *groupName = @"main";
+    FlutterEngineGroup *engineGroup = nil;
+    SwizzledFlutterEngineGroupCache *engineGroupCache = [SwizzledFlutterEngineGroupCache sharedInstance];
+    if (engineGroupCache) {
+        engineGroup = [engineGroupCache get:groupName];
     }
-    else // older versions before above is available
-        [isolate.engine initWithName:isolate.isolateId project:nil];
+    if (!engineGroup) {
+        FlutterEngineGroup *newEngineGroup = [[FlutterEngineGroup alloc] initWithName:groupName project:nil];
+        [engineGroupCache put:groupName engineGroup:newEngineGroup];
+        engineGroup = newEngineGroup;
+    }
+    FlutterEngineGroupOptions* options = [[FlutterEngineGroupOptions alloc] init];
+    options.entrypoint = info.callbackName;
+    options.libraryURI = info.callbackLibraryPath;
+    options.initialRoute = nil;
+    options.entrypointArgs = nil;
+    isolate.engine = [engineGroup makeEngineWithOptions:options];
+    // isolate.engine = [FlutterEngine alloc];
+    // if ([isolate.engine respondsToSelector:@selector(initWithName:project:allowHeadlessExecution:)]) {
+    //     ((id(*)(id,SEL,id,id,id))objc_msgSend)(isolate.engine, @selector(initWithName:project:allowHeadlessExecution:) , isolate.isolateId, nil, @(YES));
+    // }
+    // else // older versions before above is available
+    //     [isolate.engine initWithName:isolate.isolateId project:nil];
 
 
     /* not entire sure if a listen on an event channel will be queued
      * as we cannot register the event channel until after runWithEntryPoint has been called. If it is not queued
      * then this will be a race on the FlutterEventChannels initialization, and could deadlock. */
-    [isolate.engine runWithEntrypoint:info.callbackName libraryURI:info.callbackLibraryPath];
+    // [isolate.engine runWithEntrypoint:info.callbackName libraryURI:info.callbackLibraryPath];
 
 
     isolate.controlChannel = [FlutterMethodChannel methodChannelWithName:FLUTTER_ISOLATE_NAMESPACE @"/control"
