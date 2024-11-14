@@ -98,7 +98,7 @@ public class FlutterIsolatePlugin implements FlutterPlugin, MethodCallHandler, S
     @Override
     public void onAttachedToEngine(FlutterPluginBinding binding) {
         FlutterEngineGroupCache engineGroupCache = FlutterEngineGroupCache.getInstance();
-        FlutterEngineGroup engineGroup = engineGroupCache.get("main");
+        engineGroup = engineGroupCache.get("main");
         if (engineGroup == null) {
             engineGroup = new FlutterEngineGroup(binding.getApplicationContext());
             engineGroupCache.put("main", engineGroup);
